@@ -80,13 +80,19 @@ fn main() {
             let mut buffer: [u8; 1024] = [0; 1024];
 
             loop {
+                //match stream.read_to_end() {
                 match stream.read(&mut buffer) {
                     Err(err) => eprintln!("Error reading from the server: {}", err),
                     Ok(size) if size > 0 => {
-                        println!("Read {} bytes of data: {:?}", size, buffer.to_vec());
-                        match encode::deserialize::<message::RawNetworkMessage>(&buffer) {
+                        println!("Read {} bytes of data: {:#x?}", size, buffer.to_vec().as_slice());
+                        //let msg_recv = encode::deserialize(&buffer);
+
+                        match encode::deserialize(&buffer) {
                             Err(err) => eprintln!("Can't decode message: {}", err),
-                            Ok(msg) => println!("Received message: {:?}", msg.payload),
+                            Ok(msg) => {
+                                let msg: message::RawNetworkMessage = msg;
+                                println!("Received message: {:?}", msg.payload);
+                            },
                         }
                     },
                     _ => continue,
