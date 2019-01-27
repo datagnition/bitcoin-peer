@@ -1,12 +1,66 @@
 extern crate bitcoin;
 
 use std::net::*;
-use std::io::Write;
-use bitcoin::network::*;
+use std::io;
+use std::io::{Write};
+use std::fmt;
+use bitcoin::network::{message, message_network, address, constants};
 use bitcoin::consensus::encode;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::error;
 
 fn main() {
+    println!("Bitcoin listener");
+
+    if let Err(err) = run() {
+        eprintln!("Couldn't connect to server: {}", err);
+    }
+}
+
+#[derive(Debug)]
+enum Error {
+    IoError(io::Error),
+    //NetworkError(network::Error),
+    DataError(encode::Error)
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::IoError(ref e) => fmt::Display::fmt(e, f),
+            //Error::NetworkError(ref e) => fmt::Display::fmt(e, f),
+            Error::DataError(ref e) => fmt::Display::fmt(e, f),
+        }
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::IoError(ref e) => e.description(),
+            //Error::NetworkError(ref e) => e.description(),
+            Error::DataError(ref e) => e.description(),
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            Error::IoError(ref e) => Some(e),
+            //Error::NetworkError(ref e) => Some(e),
+            Error::DataError(ref e) => Some(e),
+        }
+    }
+}
+
+#[doc(hidden)]
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error::IoError(error)
+    }
+}
+
+
+fn run() -> Result<(), Error> {
     let seeds : &[SocketAddr] = &[
         SocketAddr::from(([174, 82, 166, 92], 8333)),
         SocketAddr::from(([73, 241, 174, 183], 8333)),
@@ -32,53 +86,38 @@ fn main() {
         SocketAddr::from(([148, 251, 139, 241], 8333)),
     ];
 
+    let receiver = seeds.first().unwrap();
+    let mut stream = TcpStream::connect(receiver)?;
 
-    println!("Bitcoin listener");
+    println!("Connected to the server!");
 
-    let receiver = &seeds.first().unwrap();
-    match TcpStream::connect(receiver) {
-        Ok(mut stream) => {
-            println!("Connected to the server!");
+    let start = SystemTime::now();
+    let since_the_epoch = start.duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
 
-            let start = SystemTime::now();
-            let since_the_epoch = start.duration_since(UNIX_EPOCH)
-                .expect("Time went backwards");
+    let version_msg = message::RawNetworkMessage {
+        magic: constants::Network::Bitcoin.magic(),
+        payload: message::NetworkMessage::Version(message_network::VersionMessage::new(
+            0,
+            since_the_epoch.as_secs() as i64,
+            address::Address::new(receiver, 0),
+            address::Address::new(receiver, 0),
+            0,
+            String::from("macx0r"),
+            0
+        ))
+    };
 
-            let version_msg = message::RawNetworkMessage {
-                magic: constants::Network::Bitcoin.magic(),
-                payload: message::NetworkMessage::Version(message_network::VersionMessage::new(
-                    0,
-                    since_the_epoch.as_secs() as i64,
-                    address::Address::new(receiver, 0),
-                    address::Address::new(receiver, 0),
-                    0,
-                    String::from("macx0r"),
-                    0
-                ))
-            };
+    stream.write(encode::serialize(&version_msg).as_slice())?;
 
-            if let Err(err) = stream.write(encode::serialize(&version_msg).as_slice()) {
-                eprintln!("Error sending message to the server: {}", err);
-            }
-
-            let mut buffer: [u8; 1024] = [0; 1024];
-
-            loop {
-                match message::RawNetworkMessage::from_tcpstream(&mut stream, &mut buffer) {
-                    Err(err) => eprintln!("Error reading from the server: {}", err),
-                    Ok(msg) => {
-                        let msg: message::RawNetworkMessage = msg;
-                        println!("Received message: {:?}", msg.payload);
-                    },
-                }
-            }
-
-            if let Err(err) = stream.shutdown(Shutdown::Both) {
-                eprintln!("Error closing the connection: {}", err);
-            }
-
-            ();
+    let mut buffer: [u8; 1024] = [0; 1024];
+    loop {
+        match message::RawNetworkMessage::from_tcpstream(&mut stream, &mut buffer) {
+            Ok(msg) => println!("Received message: {:?}", msg.payload),
+            Err(err) => {
+                stream.shutdown(Shutdown::Both)?;
+                return Err(Error::DataError(err))
+            },
         }
-        Err(err) => eprintln!("Couldn't connect to server: {}", err),
     }
 }
