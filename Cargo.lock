@@ -6,7 +6,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bitcoin"
 version = "0.16.0"
-source = "git+https://github.com/dr-orlovsky/rust-bitcoin.git#940d63de5d48de6925b4c0bf83083f8998bbc52f"
+source = "git+https://github.com/dr-orlovsky/rust-bitcoin.git#28a1ffa5e90b4fc44817443294885989f3bfabfe"
 dependencies = [
  "bitcoin-bech32 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitcoin_hashes 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",

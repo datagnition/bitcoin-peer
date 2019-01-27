@@ -2,7 +2,7 @@ extern crate bitcoin;
 
 use std::net::*;
 use std::io;
-use std::io::{Write};
+use std::io::Write;
 use std::fmt;
 use bitcoin::network::{message, message_network, address, constants};
 use bitcoin::consensus::encode;
@@ -110,7 +110,7 @@ fn run() -> Result<(), Error> {
 
     stream.write(encode::serialize(&version_msg).as_slice())?;
 
-    let mut buffer: [u8; 1024] = [0; 1024];
+    let mut buffer = vec![];
     loop {
         match message::RawNetworkMessage::from_tcpstream(&mut stream, &mut buffer) {
             Ok(msg) => println!("Received message: {:?}", msg.payload),
