@@ -1,0 +1,7 @@
+[package]
+name = "bitcoin-peer"
+version = "0.1.0"
+authors = ["Dr. Maxim Orlovsky <dr.orlovsky@gmail.com>"]
+
+[dependencies]
+bitcoin = "0.16.0"
