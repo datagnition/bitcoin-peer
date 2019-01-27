@@ -1,25 +1,10 @@
 extern crate bitcoin;
 
 use std::net::*;
-use std::io::{Read, Write};
+use std::io::Write;
 use bitcoin::network::*;
 use bitcoin::consensus::encode;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-/*
-pub enum Magic {
-    Main = 0xD9B4BEF9,
-    Testnet = 0xDAB5BFFA,
-    Testnet3 = 0x0709110B
-}
-
-pub struct Message {
-    pub magic: Magic,
-    pub command: str,
-    pub payload: [u8]
-}
-*/
-
 
 fn main() {
     let seeds : &[SocketAddr] = &[
@@ -76,26 +61,15 @@ fn main() {
                 eprintln!("Error sending message to the server: {}", err);
             }
 
-            // let mut buffer = Vec::new();
             let mut buffer: [u8; 1024] = [0; 1024];
 
             loop {
-                //match stream.read_to_end() {
-                match stream.read(&mut buffer) {
+                match message::RawNetworkMessage::from_tcpstream(&mut stream, &mut buffer) {
                     Err(err) => eprintln!("Error reading from the server: {}", err),
-                    Ok(size) if size > 0 => {
-                        println!("Read {} bytes of data: {:#x?}", size, buffer.to_vec().as_slice());
-                        //let msg_recv = encode::deserialize(&buffer);
-
-                        match encode::deserialize(&buffer) {
-                            Err(err) => eprintln!("Can't decode message: {}", err),
-                            Ok(msg) => {
-                                let msg: message::RawNetworkMessage = msg;
-                                println!("Received message: {:?}", msg.payload);
-                            },
-                        }
+                    Ok(msg) => {
+                        let msg: message::RawNetworkMessage = msg;
+                        println!("Received message: {:?}", msg.payload);
                     },
-                    _ => continue,
                 }
             }
 

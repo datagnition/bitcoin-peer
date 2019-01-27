@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Dr. Maxim Orlovsky <dr.orlovsky@gmail.com>"]
 
 [dependencies]
-bitcoin = "0.16.0"
+bitcoin = { git = "https://github.com/dr-orlovsky/rust-bitcoin.git" }
