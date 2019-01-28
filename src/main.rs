@@ -87,38 +87,62 @@ fn run() -> Result<(), Error> {
 
     let receiver = seeds.first().unwrap();
     let mut stream = TcpStream::connect(receiver)?;
-
     println!("Connected to the server");
 
-    let start = SystemTime::now();
-    let since_the_epoch = start.duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-
-    let version_msg = message::RawNetworkMessage {
-        magic: constants::Network::Bitcoin.magic(),
-        payload: message::NetworkMessage::Version(message_network::VersionMessage::new(
-            0,
-            since_the_epoch.as_secs() as i64,
-            address::Address::new(receiver, 0),
-            address::Address::new(receiver, 0),
-            0,
-            String::from("macx0r"),
-            0
-        ))
-
-    };
-
-    stream.write(encode::serialize(&version_msg).as_slice())?;
-    println!("Version message sent");
+    send_version_message(&mut stream, receiver);
 
     let mut buffer = vec![];
     loop {
-        match message::RawNetworkMessage::from_stream(&mut stream, &mut buffer) {
-            Ok(msg) => println!("Received message: {:?}", msg.payload),
+        let message = message::RawNetworkMessage::from_stream(&mut stream, &mut buffer);
+        match message {
+            Ok(ref msg) => {
+                println!("Received message: {:?}", msg.payload);
+                match msg.payload {
+                    message::NetworkMessage::Verack =>
+                        send_verack_message(&mut stream),
+                    _ => continue,
+                }
+            },
             Err(err) => {
                 stream.shutdown(Shutdown::Both)?;
                 return Err(Error::DataError(err))
             },
-        }
+        };
     }
+}
+
+macro_rules! encode {
+    ( $payload:expr ) => {
+        &encode::serialize(&message::RawNetworkMessage {
+            magic: constants::Network::Bitcoin.magic(),
+            payload: $payload,
+        }).as_slice()
+    };
+}
+
+fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
+    let start = SystemTime::now();
+    let since_the_epoch = start.duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+
+    let msg = message::NetworkMessage::Version(
+        message_network::VersionMessage::new(
+            0,
+            since_the_epoch.as_secs() as i64,
+            address::Address::new(addr, 0),
+            address::Address::new(addr, 0),
+            0,
+            String::from("macx0r"),
+            0
+        )
+    );
+    stream.write(encode!(msg));
+    println!("Version message sent");
+    Ok(())
+}
+
+fn send_verack_message(stream: &mut TcpStream) -> Result<(), io::Error> {
+    stream.write(encode!(message::NetworkMessage::Verack))?;
+    println!("Verack message sent");
+    Ok(())
 }
