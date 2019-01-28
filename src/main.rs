@@ -98,8 +98,12 @@ fn run() -> Result<(), Error> {
             Ok(ref msg) => {
                 println!("Received message: {:?}", msg.payload);
                 match msg.payload {
-                    message::NetworkMessage::Verack =>
-                        send_verack_message(&mut stream),
+                    message::NetworkMessage::Verack => {
+                        send_verack_message(&mut stream);
+                        send_addr_message(&mut stream, &receiver)
+                    },
+                    message::NetworkMessage::Ping(nonce) =>
+                        send_pong_message(&mut stream, nonce),
                     _ => continue,
                 }
             },
@@ -120,15 +124,19 @@ macro_rules! encode {
     };
 }
 
-fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
+fn get_current_timestamp() -> u32 {
     let start = SystemTime::now();
     let since_the_epoch = start.duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
+    since_the_epoch.as_secs() as u32
+}
+
+fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
 
     let msg = message::NetworkMessage::Version(
         message_network::VersionMessage::new(
             0,
-            since_the_epoch.as_secs() as i64,
+            get_current_timestamp() as i64,
             address::Address::new(addr, 0),
             address::Address::new(addr, 0),
             0,
@@ -144,5 +152,20 @@ fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(),
 fn send_verack_message(stream: &mut TcpStream) -> Result<(), io::Error> {
     stream.write(encode!(message::NetworkMessage::Verack))?;
     println!("Verack message sent");
+    Ok(())
+}
+
+fn send_addr_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
+    let msg = message::NetworkMessage::Addr(vec![
+        (get_current_timestamp(), address::Address::new(&addr, 0))
+    ]);
+    stream.write(encode!(msg));
+    println!("Addr message sent");
+    Ok(())
+}
+
+fn send_pong_message(stream: &mut TcpStream, nonce: u64) -> Result<(), io::Error> {
+    stream.write(encode!(message::NetworkMessage::Pong(nonce)))?;
+    println!("Pong message sent");
     Ok(())
 }
