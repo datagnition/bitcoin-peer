@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dr-orlovsky/bitcoinbigdata-netlistener.svg?branch=master)](https://travis-ci.org/dr-orlovsky/bitcoinbigdata-netlistener) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b869ee6e762b4596abf865f87dbd80ab)](https://www.codacy.com/app/dr-orlovsky/bitcoinbigdata-netlistener?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dr-orlovsky/bitcoinbigdata-netlistener&amp;utm_campaign=Badge_Grade) [![Coverage Status](https://coveralls.io/repos/github/dr-orlovsky/bitcoinbigdata-netlistener/badge.svg?branch=master)](https://coveralls.io/github/dr-orlovsky/bitcoinbigdata-netlistener?branch=master)
+
 Bitcoin Network Listener
 ===
 
