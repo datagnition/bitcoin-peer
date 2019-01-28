@@ -5,3 +5,4 @@ authors = ["Dr. Maxim Orlovsky <dr.orlovsky@gmail.com>"]
 
 [dependencies]
 bitcoin = { git = "https://github.com/dr-orlovsky/rust-bitcoin.git" }
+aerospike = "0.3.0"
