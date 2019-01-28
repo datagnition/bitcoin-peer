@@ -8,6 +8,10 @@ use bitcoin::consensus::encode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::error;
 
+type Failable = Result<(), Error>;
+type Messages = Vec<message::NetworkMessage>;
+type FailableWithMessages = Result<Messages, Error>;
+
 fn main() {
     println!("Bitcoin listener");
 
@@ -59,7 +63,7 @@ impl From<io::Error> for Error {
 }
 
 
-fn run() -> Result<(), Error> {
+fn run() -> Failable {
     let seeds : &[SocketAddr] = &[
         SocketAddr::from(([37, 187, 0, 47], 8333)),
         SocketAddr::from(([73, 241, 174, 183], 8333)),
@@ -87,24 +91,67 @@ fn run() -> Result<(), Error> {
 
     let receiver = seeds.first().unwrap();
     let mut stream = TcpStream::connect(receiver)?;
-    println!("Connected to the server");
+    println!("*** Connected to the server");
 
-    send_version_message(&mut stream, receiver);
+    let greetings_messages = behaviour_greetings(&mut stream, &receiver)?;
+    println!("*** Greetings behaviour completed successfully");
+
+    Ok(())
+}
+
+fn behaviour_greetings(stream: &mut TcpStream, addr: &SocketAddr) -> FailableWithMessages {
+    // Flags to determine passing through the behaviour states
+    #[derive(Default)]
+    struct Flags {
+        verack: bool,
+        version: bool,
+        addr: bool,
+        ping: bool
+    }
+    let mut flags: Flags = Default::default();
+
+    // Behavior starts with the first Version message sent from our side
+    send_version_message(stream, addr)?;
 
     let mut buffer = vec![];
+    // Let's collect all non-behaviour messages to return them at the end of the function
+    let mut messages: Messages = vec![];
+
+    // Now let's loop over all incoming messages untill we collect all messages from the
+    // behaviour pattern
     loop {
-        let message = message::RawNetworkMessage::from_stream(&mut stream, &mut buffer);
+        let message = message::RawNetworkMessage::from_stream(stream, &mut buffer);
         match message {
             Ok(ref msg) => {
                 println!("Received message: {:?}", msg.payload);
                 match msg.payload {
-                    message::NetworkMessage::Verack => {
-                        send_verack_message(&mut stream);
-                        send_addr_message(&mut stream, &receiver)
+                    message::NetworkMessage::Version(_) => {
+                        flags.version = true;
+                        send_verack_message(stream)?;
                     },
-                    message::NetworkMessage::Ping(nonce) =>
-                        send_pong_message(&mut stream, nonce),
-                    _ => continue,
+                    message::NetworkMessage::Verack => {
+                        flags.verack = true;
+                        send_addr_message(stream, &addr)?
+                    },
+                    message::NetworkMessage::Ping(nonce) => {
+                        flags.ping = true;
+                        send_pong_message(stream, nonce)?;
+                    },
+                    message::NetworkMessage::Addr(_) => {
+                        flags.addr = true;
+                        // We need to save this message for a later use to update the list
+                        // of known peers
+                        messages.push(msg.payload.clone());
+                    },
+                    message::NetworkMessage::Alert(_) => {
+                        // This is old-behaving agent: alert message is depricated. Just ignore it.
+                    },
+                    _ => {
+                        // Normally greeting part should consist only of Version, Verack, Ping/Pong,
+                        // and Addr messages; so we need to inform that the greeting went wrong
+                        // if we received any other message
+                        messages.push(msg.payload.clone());
+                    },
                 }
             },
             Err(err) => {
@@ -112,6 +159,12 @@ fn run() -> Result<(), Error> {
                 return Err(Error::DataError(err))
             },
         };
+
+        // Now we have run the whole greetings protocol and can return with all collected
+        // non-greeting message set
+        if flags.version && flags.verack && flags.addr && flags.ping {
+            return Ok(messages);
+        }
     }
 }
 
@@ -131,7 +184,7 @@ fn get_current_timestamp() -> u32 {
     since_the_epoch.as_secs() as u32
 }
 
-fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
+fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Failable {
 
     let msg = message::NetworkMessage::Version(
         message_network::VersionMessage::new(
@@ -144,27 +197,27 @@ fn send_version_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(),
             0
         )
     );
-    stream.write(encode!(msg));
+    stream.write(encode!(msg))?;
     println!("Version message sent");
     Ok(())
 }
 
-fn send_verack_message(stream: &mut TcpStream) -> Result<(), io::Error> {
+fn send_verack_message(stream: &mut TcpStream) -> Failable {
     stream.write(encode!(message::NetworkMessage::Verack))?;
     println!("Verack message sent");
     Ok(())
 }
 
-fn send_addr_message(stream: &mut TcpStream, addr: &SocketAddr) -> Result<(), io::Error> {
+fn send_addr_message(stream: &mut TcpStream, addr: &SocketAddr) -> Failable {
     let msg = message::NetworkMessage::Addr(vec![
         (get_current_timestamp(), address::Address::new(&addr, 0))
     ]);
-    stream.write(encode!(msg));
+    stream.write(encode!(msg))?;
     println!("Addr message sent");
     Ok(())
 }
 
-fn send_pong_message(stream: &mut TcpStream, nonce: u64) -> Result<(), io::Error> {
+fn send_pong_message(stream: &mut TcpStream, nonce: u64) -> Failable {
     stream.write(encode!(message::NetworkMessage::Pong(nonce)))?;
     println!("Pong message sent");
     Ok(())
