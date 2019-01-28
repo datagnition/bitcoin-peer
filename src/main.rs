@@ -1,8 +1,7 @@
 extern crate bitcoin;
 
 use std::net::*;
-use std::io;
-use std::io::Write;
+use std::io::{self, Write};
 use std::fmt;
 use bitcoin::network::{message, message_network, address, constants};
 use bitcoin::consensus::encode;
@@ -62,9 +61,9 @@ impl From<io::Error> for Error {
 
 fn run() -> Result<(), Error> {
     let seeds : &[SocketAddr] = &[
-        SocketAddr::from(([174, 82, 166, 92], 8333)),
-        SocketAddr::from(([73, 241, 174, 183], 8333)),
         SocketAddr::from(([37, 187, 0, 47], 8333)),
+        SocketAddr::from(([73, 241, 174, 183], 8333)),
+        SocketAddr::from(([174, 82, 166, 92], 8333)),
         SocketAddr::from(([73, 76, 228, 164], 8333)),
         SocketAddr::from(([172, 104, 244, 173], 8333)),
         SocketAddr::from(([116, 203, 46, 171], 8333)),
@@ -89,7 +88,7 @@ fn run() -> Result<(), Error> {
     let receiver = seeds.first().unwrap();
     let mut stream = TcpStream::connect(receiver)?;
 
-    println!("Connected to the server!");
+    println!("Connected to the server");
 
     let start = SystemTime::now();
     let since_the_epoch = start.duration_since(UNIX_EPOCH)
@@ -106,13 +105,15 @@ fn run() -> Result<(), Error> {
             String::from("macx0r"),
             0
         ))
+
     };
 
     stream.write(encode::serialize(&version_msg).as_slice())?;
+    println!("Version message sent");
 
     let mut buffer = vec![];
     loop {
-        match message::RawNetworkMessage::from_tcpstream(&mut stream, &mut buffer) {
+        match message::RawNetworkMessage::from_stream(&mut stream, &mut buffer) {
             Ok(msg) => println!("Received message: {:?}", msg.payload),
             Err(err) => {
                 stream.shutdown(Shutdown::Both)?;
