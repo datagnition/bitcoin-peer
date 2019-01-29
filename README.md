@@ -20,9 +20,9 @@ Building
 ---
 
 ```bash
-$ git clone https://github.com/dr-orlovsky/bitcoinbigdata-netlistener.git
-$ cd bitcoinbigdata-netlistener
-$ cargo build
-$ cargo test
-$ cargo run
+git clone https://github.com/dr-orlovsky/bitcoinbigdata-netlistener.git
+cd bitcoinbigdata-netlistener
+cargo build
+cargo test
+cargo run
 ```
