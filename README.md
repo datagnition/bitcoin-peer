@@ -12,6 +12,10 @@ information from the netwrok in real time on existing network participants, new 
 transactions (including mempool data). These data are transferred to Aerospike database for
 further cloud processing.
 
+Architecture
+---
+![](docs/architecture.svg)
+
 Building
 ---
 
