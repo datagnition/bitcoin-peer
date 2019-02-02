@@ -45,7 +45,7 @@ impl Behaviours {
         // Now let's loop over all incoming messages untill we collect all messages from the
         // behaviour pattern
         loop {
-            let message = RawNetworkMessage::from_stream(&mut self.connection.stream, &mut buffer);
+            let message = RawNetworkMessage::from_stream(&mut self.connection.stream, &mut buffer, Default::default());
             match message {
                 Ok(ref msg) => {
                     println!("Received message: {:?}", msg.payload);

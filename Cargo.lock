@@ -68,7 +68,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bitcoin"
 version = "0.16.0"
-source = "git+https://github.com/dr-orlovsky/rust-bitcoin.git#4d464fa4f000a90af1748830fef2d862a43df69c"
+source = "git+https://github.com/dr-orlovsky/rust-bitcoin.git#48021db94463226ade6c1e73269877b5f79588db"
 dependencies = [
  "bitcoin-bech32 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitcoin_hashes 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -192,7 +192,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "crossbeam-utils 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-utils 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "memoffset 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "scopeguard 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -205,10 +205,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.6.3"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -529,7 +530,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crossbeam-epoch 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "30fecfcac6abfef8771151f8be4abc9e4edc112c2bcb233314cafde2680536e9"
 "checksum crossbeam-epoch 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2449aaa4ec7ef96e5fb24db16024b935df718e9ae1cec0a1e68feeca2efca7b8"
 "checksum crossbeam-utils 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "677d453a17e8bd2b913fa38e8b9cf04bcdbb5be790aa294f2389661d72036015"
-"checksum crossbeam-utils 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "41ee4864f4797060e52044376f7d107429ce1fb43460021b126424b7180ee21a"
+"checksum crossbeam-utils 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)" = "f8306fcef4a7b563b76b7dd949ca48f52bc1141aa067d2ea09565f3e2652aa5c"
 "checksum error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "07e791d3be96241c77c43846b665ef1384606da2cd2a48730abe606a12906e02"
 "checksum fuchsia-cprng 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "81f7f8eb465745ea9b02e2704612a9946a59fa40572086c6fd49d6ddcf30bf31"
 "checksum gcc 0.3.55 (registry+https://github.com/rust-lang/crates.io-index)" = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
