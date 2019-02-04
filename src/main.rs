@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate aerospike;
 extern crate bitcoin;
+extern crate lightning;
 
 use std::net::*;
 
@@ -9,6 +10,19 @@ mod network;
 
 use db::*;
 use network::*;
+
+use lightning::util::logger::{Logger, Record};
+use lightning::ln::peer_handler::{MessageHandler, PeerManager};
+use lightning::ln::channelmanager::ChannelManager;
+use lightning::ln::routingmanager::RountingManager;
+use lightning::ln::msgs::{ChannelMessageHandler, RoutingMessageHandler};
+
+struct SimpleLogger { }
+impl Logger for SimpleLogger {
+    fn log(&self, record: &Record) {
+        println!("{?:}", record);
+    }
+}
 
 fn main() {
     let seeds : &[SocketAddr] = &[
@@ -38,7 +52,7 @@ fn main() {
 
     let receiver = seeds.first().unwrap();
 
-    println!("Bitcoin listener");
+    println!("Bitcoin & Lightning Network listener");
 
     let mut asp_connector = AspConnector::new();
 
@@ -47,6 +61,9 @@ fn main() {
         eprintln!("Couldn't connect to server: {}", err);
         return
     }
+
+    let channel_manager = ChannelManager::new();
+    let peer_manager= PeerManager::new(Arc<SimpleLogger {}>);
 
     println!("*** Connected to the server");
     if let Err(err) = agent.unwrap().run() {
