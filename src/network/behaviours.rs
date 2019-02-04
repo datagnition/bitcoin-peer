@@ -5,7 +5,8 @@ use network::error::Error;
 use network::Failable;
 use network::messaging::*;
 
-use bitcoin::network::message::{NetworkMessage, RawNetworkMessage};
+use bitcoin::network::message::NetworkMessage;
+use bitcoin::network::stream_reader::StreamReader;
 
 pub type FailableWithMessages = Result<Messages, Error>;
 
@@ -38,51 +39,48 @@ impl Behaviours {
         // Behavior starts with the first Version message sent from our side
         self.connection.send_version_message()?;
 
-        let mut buffer = vec![];
         // Let's collect all non-behaviour messages to return them at the end of the function
         let mut messages: Messages = vec![];
 
-        // Now let's loop over all incoming messages untill we collect all messages from the
+        // Now let's loop over all incoming messages until we collect all messages from the
         // behaviour pattern
         loop {
-            let message = RawNetworkMessage::from_stream(&mut self.connection.stream, &mut buffer, Default::default());
-            match message {
-                Ok(ref msg) => {
-                    println!("Received message: {:?}", msg.payload);
-                    match msg.payload {
-                        NetworkMessage::Version(_) => {
-                            flags.version = true;
-                            self.connection.send_verack_message()?;
-                        },
-                        NetworkMessage::Verack => {
-                            flags.verack = true;
-                            self.connection.send_addr_message()?
-                        },
-                        NetworkMessage::Ping(nonce) => {
-                            flags.ping = true;
-                            self.connection.send_pong_message(nonce)?;
-                        },
-                        NetworkMessage::Addr(_) => {
-                            flags.addr = true;
-                            // We need to save this message for a later use to update the list
-                            // of known peers
-                            messages.push(msg.payload.clone());
-                        },
-                        NetworkMessage::Alert(_) => {
-                            // This is old-behaving agent: alert message is depricated. Just ignore it.
-                        },
-                        _ => {
-                            // Normally greeting part should consist only of Version, Verack, Ping/Pong,
-                            // and Addr messages; so we need to inform that the greeting went wrong
-                            // if we received any other message
-                            messages.push(msg.payload.clone());
-                        },
-                    }
-                },
-                Err(err) => {
-                    return Err(Error::DataError(err))
-                },
-            };
+            let result = StreamReader::new(&mut self.connection.stream, None).read_messages();
+            if let Err(err) = result {
+                return Err(Error::DataError(err))
+            }
+            for msg in result.unwrap() {
+                println!("Received message: {:?}", msg.payload);
+                match msg.payload {
+                    NetworkMessage::Version(_) => {
+                        flags.version = true;
+                        self.connection.send_verack_message()?;
+                    },
+                    NetworkMessage::Verack => {
+                        flags.verack = true;
+                        self.connection.send_addr_message()?
+                    },
+                    NetworkMessage::Ping(nonce) => {
+                        flags.ping = true;
+                        self.connection.send_pong_message(nonce)?;
+                    },
+                    NetworkMessage::Addr(_) => {
+                        flags.addr = true;
+                        // We need to save this message for a later use to update the list
+                        // of known peers
+                        messages.push(msg.payload.clone());
+                    },
+                    NetworkMessage::Alert(_) => {
+                        // This is old-behaving agent: alert message is deprecated. Just ignore it.
+                    },
+                    _ => {
+                        // Normally greeting part should consist only of Version, Verack, Ping/Pong,
+                        // and Addr messages; so we need to inform that the greeting went wrong
+                        // if we received any other message
+                        messages.push(msg.payload.clone());
+                    },
+                }
+            }
 
             // Now we have run the whole greetings protocol and can return with all collected
             // non-greeting message set
