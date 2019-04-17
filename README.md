@@ -14,7 +14,7 @@ further cloud processing.
 
 Architecture
 ---
-![](docs/architecture.svg)
+![](docs/sysarch.svg)
 
 Building
 ---
